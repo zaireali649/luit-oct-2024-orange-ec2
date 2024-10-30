@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation Template to deploy an EC2 instance with Apache web server
+
+Resources:
+  # Define the EC2 instance resource
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro  # Instance type is set to t2.micro, which is eligible for free-tier usage
+      ImageId: ami-06b21ccaeff8cd686  # Amazon Linux AMI; ensure it matches the desired region
+      KeyName: private-ec2  # The name of the key pair for SSH access; replace with your key pair
+      SecurityGroupIds:
+        - !Ref InstanceSecurityGroup  # Associate the instance with the security group defined below
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          yum update -y  # Update all installed packages
+          yum install -y httpd  # Install Apache HTTP server
+          systemctl start httpd  # Start the Apache server
+          systemctl enable httpd  # Enable Apache to start on boot
+          # Create a simple HTML file for the web server's root
+          echo "<html><h1>Welcome to Orange's Apache Web Server!!</h1></html>" > /var/www/html/index.html
+    DeletionPolicy: Delete               # Deletes the instance when the stack is updated
+    UpdateReplacePolicy: Delete          # Replaces the instance on updates
+
+  # Define the security group allowing specific access
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP access  # Description for the security group
+      SecurityGroupIngress:
+        # Allow SSH access (port 22) from any IP address; restrict as needed for security
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        # Allow HTTP access (port 80) from any IP address to allow web traffic
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+Outputs:
+  # Output the instance ID after creation
+  InstanceId:
+    Description: Instance ID of the created EC2 instance
+    Value: !Ref EC2Instance
+  # Output the public DNS URL of the Apache web server
+  WebURL:
+    Description: URL of the Apache Web Server
+    Value: !Sub "http://${EC2Instance.PublicDnsName}"

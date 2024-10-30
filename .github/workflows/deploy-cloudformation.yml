@@ -1,0 +1,51 @@
+name: Deploy EC2 with Apache Web Server
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout the repository
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    # Step 2: Configure AWS credentials using GitHub secrets
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1  # Specify your AWS region
+
+    # Step 3: Check if the CloudFormation stack exists
+    - name: Check if stack exists
+      id: stack_check
+      run: |
+        if aws cloudformation describe-stacks --stack-name ec2-apache-web-server-stack > /dev/null 2>&1; then
+          echo "exists=true" >> $GITHUB_ENV
+        else
+          echo "exists=false" >> $GITHUB_ENV
+        fi
+
+    # Step 4: Conditionally delete the CloudFormation stack if it exists
+    - name: Delete existing CloudFormation Stack
+      if: env.exists == 'true'
+      run: |
+        aws cloudformation delete-stack --stack-name ec2-apache-web-server-stack
+        aws cloudformation wait stack-delete-complete --stack-name ec2-apache-web-server-stack
+
+    # Step 5: Deploy the CloudFormation stack
+    - name: Deploy CloudFormation Stack
+      run: |
+        aws cloudformation deploy --template-file ec2-web-server.yml --stack-name ec2-apache-web-server-stack --parameter-overrides KeyName=private-ec2
+
+    # Optional Step: Output the stack status
+    - name: Describe CloudFormation Stack
+      run: |
+        aws cloudformation describe-stacks --stack-name ec2-apache-web-server-stack

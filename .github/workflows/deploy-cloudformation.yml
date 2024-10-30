@@ -1,0 +1,37 @@
+name: Deploy EC2 with Apache Web Server
+
+on:
+  push:
+    branches:
+      - main  # Adjust the branch as needed
+  pull_request:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout the repository
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    # Step 2: Configure AWS credentials using GitHub secrets
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1  # Specify your AWS region
+
+    # Step 3: Deploy the CloudFormation stack
+    - name: Deploy CloudFormation Stack
+      run: |
+        aws cloudformation deploy \
+          --template-file ec2-web-server.yml \  # Update with the path to your template file
+          --stack-name ec2-apache-web-server-stack \  # Name of your CloudFormation stack
+          --parameter-overrides KeyName=private-ec2 # Replace with your actual key name
+
+    # Optional Step: Output the stack status
+    - name: Describe CloudFormation Stack
+      run: |
+        aws cloudformation describe-stacks --stack-name ec2-apache-web-server-stack

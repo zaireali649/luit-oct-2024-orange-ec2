@@ -19,7 +19,7 @@ Resources:
           systemctl start httpd  # Start the Apache server
           systemctl enable httpd  # Enable Apache to start on boot
           # Create a simple HTML file for the web server's root
-          echo "<html><h1>Welcome to the Apache Web Server</h1></html>" > /var/www/html/index.html
+          echo "<html><h1>Welcome to Orange's Apache Web Server!</h1></html>" > /var/www/html/index.html
 
   # Define the security group allowing specific access
   InstanceSecurityGroup:
